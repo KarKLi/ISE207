@@ -1,7 +1,7 @@
+/*该头文件没有提供16位RGB555或RGB565的读取方式*/
 #pragma once
 #pragma warning(disable:4996)
 #include <iostream>
-#include <fstream>
 #include <Windows.h>
 #include <malloc.h>
 #include <opencv2\highgui\highgui.hpp>
@@ -35,11 +35,12 @@ private:
 };
 bool Image::BMPRead()
 {
+	/*bmpfp为读取文件指针*/
 	FILE *bmpfp;
 	bmpfp = fopen(ImgFilename.c_str(), "rb");
 	if (!bmpfp)
 		return false;
-	if (!(fread(&bmpheader, sizeof(BITMAPFILEHEADER), 1, bmpfp) && fread(&bmpinfo, sizeof(BITMAPINFOHEADER), 1, bmpfp)))
+	if (!(fread(&bmpheader, sizeof(BITMAPFILEHEADER), 1, bmpfp) && fread(&bmpinfo, sizeof(BITMAPINFOHEADER), 1, bmpfp)))//读取文件头，信息头
 	{
 		cerr << "Can't read image file, press any key to exit." << endl;
 		cin.ignore();
@@ -47,7 +48,7 @@ bool Image::BMPRead()
 		fclose(bmpfp);
 		return false;
 	}
-	else if (bmpheader.bfType == 0x4d42)//前两个字头
+	else if (bmpheader.bfType == 0x4d42)//前两个字头，4d=='B',42=='M'
 	{
 		cout << "The type of image is: BMP" << endl;
 		cout << "其大小为：" << bmpheader.bfSize / 1024 << "KB" << endl;
@@ -55,7 +56,7 @@ bool Image::BMPRead()
 		cout << "其宽度为" << bmpinfo.biWidth << "像素" << endl;
 		cout << "其高度为" << bmpinfo.biHeight << "像素" << endl;
 		cout << "其位数为：" << bmpinfo.biBitCount << endl;
-		switch (bmpinfo.biCompression)
+		switch (bmpinfo.biCompression)//压缩方式，用于16位BMP图像
 		{
 		case 0:
 			cout << "没有压缩" << endl;
@@ -86,9 +87,9 @@ bool Image::BMPRead()
 		return false;
 	}
 }
-bool Image::BMPWrite(const char *filename)
+bool Image::BMPWrite(const char *filename)//用于真彩色图像的写入
 {
-	if (bmpinfo.biBitCount != 24)
+	if (bmpinfo.biBitCount != 24)//非24位真彩色图像
 	{
 		return BMPNone24Write(filename);
 	}
@@ -105,7 +106,7 @@ bool Image::BMPWrite(const char *filename)
 	w = bmpinfo.biWidth;
 	h = bmpinfo.biHeight;
 	//allocate the buffer memory
-	unsigned char *buff = new unsigned char[bmpinfo.biHeight*bmpinfo.biWidth*_CHANNEL_OF_COLOR];
+	unsigned char *buff = new unsigned char[bmpinfo.biHeight*bmpinfo.biWidth*_CHANNEL_OF_COLOR];//相当于malloc
 	memset(buff, 0, sizeof(buff));
 	auto p = buff;
 	if (!(fread(&bmpheader, sizeof(BITMAPFILEHEADER), 1, bmpfp) && fread(&bmpinfo, sizeof(BITMAPINFOHEADER), 1, bmpfp)))
@@ -118,29 +119,30 @@ bool Image::BMPWrite(const char *filename)
 	}
 	fwrite(&bmpheader, sizeof(BITMAPFILEHEADER), 1, file);
 	fwrite(&bmpinfo, sizeof(BITMAPINFO), 1, file);
- 	fseek(file,bmpheader.bfOffBits, SEEK_SET);
-	fread(buff,w*h*_CHANNEL_OF_COLOR,1, bmpfp);
+ 	fseek(file,bmpheader.bfOffBits, SEEK_SET);//从0开始，漂移bfOffBits字节，类里的bfOffBits成员代表从0开始漂移的字节量到达像素点
+	fread(buff,w*h*_CHANNEL_OF_COLOR,1, bmpfp);//读取长*宽*颜色数（BGR）到缓冲区buff中
 	cout << "Writing to file, please wait..." << endl;
 	for (unsigned int j = 0; j<h; j++)
 	{
 		for (unsigned int i = 0; i<w * 3; i++)
 		{
-			fwrite(p++, 1, 1, file);//这里p++的作用和上面是一样的。
+			fwrite(p++, 1, 1, file);//通过buff逐字节写入
 		}
 	}
-	delete buff;
+	delete buff;//相当于free
 	fclose(bmpfp);
 	fclose(file);
 	cout << "Done!" << endl;
 	cout << "The file name is: " << filename << endl;
 	cout << "Press enter to exit." << endl;
-	cin.ignore();
-	getchar();
+	system("pause");
 	return true;
 }
 void Image::BMPCVShow()
 {
-	Mat Img = imread(ImgFilename, CV_LOAD_IMAGE_UNCHANGED);
+	//This function can only be executed in Release mode. I don't know why.
+#ifndef _DEBUG
+	Mat Img = imread(ImgFilename, CV_LOAD_IMAGE_UNCHANGED);//读入图像到Mat（矩阵）中
 	if (Img.data == NULL)
 		return;
 	cout << "Showing picture..." << endl;
@@ -151,6 +153,7 @@ void Image::BMPCVShow()
 	//等待直到有键按下
 	waitKey(0);
 	destroyAllWindows();
+#endif
 }
 bool Image::BMPNone24Write(const char *filename)
 {
@@ -163,17 +166,14 @@ bool Image::BMPNone24Write(const char *filename)
 	//fread(&bmpheader, sizeof(BITMAPFILEHEADER), 1, fp);
 	////定义位图信息头结构变量，读取位图信息头进内存，存放在变量head中
 	//fread(&bmpinfo, sizeof(BITMAPINFOHEADER), 1, fp); //获取图像宽、高、每像素所占位数等信息
-	fseek(fp, 54, SEEK_SET);//漂移54字节
+	fseek(fp, 54, SEEK_SET);//漂移54字节,54为BITMAPFILEHEADER(14字节)+BITMAPINFOHEADER(40字节)的大小
 	LONG bmpWidth = bmpinfo.biWidth;
 	LONG bmpHeight = bmpinfo.biHeight;
 	WORD biBitCount = bmpinfo.biBitCount;//定义变量，计算图像每行像素所占的字节数（必须是4的倍数）
 	RGBQUAD pColorTable[256];
-	int lineByte = (bmpWidth * biBitCount / 8 + 3) / 4 * 4;//每行字节归四化
-	if (biBitCount == 8)
-	{
-		//申请颜色表所需要的空间，读颜色表进内存
-		fread(&pColorTable, sizeof(RGBQUAD), 256, fp);
-	}
+	int lineByte = (bmpWidth * biBitCount / 8 + 3) / 4 * 4;//每行字节归四化（内存对齐）
+	//申请调色板所需要的空间，读颜色表进内存
+	fread(&pColorTable, sizeof(RGBQUAD), pow(2,bmpinfo.biBitCount), fp);
 	//申请位图数据所需要的空间，读位图数据进内存
 	unsigned char *pBmpBuf = new unsigned char[lineByte * bmpHeight];
 	memset(pBmpBuf, 0, sizeof(pBmpBuf));
@@ -182,7 +182,7 @@ bool Image::BMPNone24Write(const char *filename)
 	fwrite(&bmpheader, sizeof(BITMAPFILEHEADER), 1, file);
 	fwrite(&bmpinfo, sizeof(BITMAPINFO), 1, file);
 	fseek(file,54, SEEK_SET);//不要用sizeof(BITMAPFILEHEADER)+sizeof(BITMAPINFOHEADER),会莫名其妙多出四个字节，应使用24位下的bmpheader.biOffset量来漂移，经测得，为54
-	//写入颜色表
+	//写入调色板
 	for (unsigned int i = 0; i < pow(2, bmpinfo.biBitCount); i++)
 	{
 		fwrite(&pColorTable[i].rgbBlue, sizeof(BYTE), 1, file);
@@ -190,8 +190,8 @@ bool Image::BMPNone24Write(const char *filename)
 		fwrite(&pColorTable[i].rgbRed, sizeof(BYTE), 1, file);
 		fwrite(&pColorTable[i].rgbReserved, sizeof(BYTE), 1, file);
 	}
-	fseek(file, bmpheader.bfOffBits,SEEK_SET);//应为1078个字节
-	fread(pBmpBuf,lineByte * bmpHeight,1, fp);
+	fseek(file, bmpheader.bfOffBits,SEEK_SET);//bfOffBits应为1078个字节，因为1078-54=1024=2^10,2^10/4=2^8=256，对应pow(2,bmpinfo.biBitCount)
+	fread(pBmpBuf,lineByte * bmpHeight,1, fp);//行字节数*行数=总像素字节数
 	cout << "Writing to file, please wait..." << endl;
 	for (unsigned int j = 0; j<bmpHeight; j++)
 	{
@@ -206,7 +206,7 @@ bool Image::BMPNone24Write(const char *filename)
 	cout << "Done!" << endl;
 	cout << "The file name is: " << filename << endl;
 	cout << "Press enter to exit." << endl;
-	getchar();
+	system("pause");
 	return true;//写入文件成功
 }
 bool Image::WritePixelToText()
@@ -238,7 +238,7 @@ bool Image::WritePixelToText()
 	unsigned char *pBmpBuf = new unsigned char[lineByte * bmpHeight];
 	memset(pBmpBuf, 0, sizeof(pBmpBuf));
 	auto p = pBmpBuf;
-	fseek(fp, bmpheader.bfOffBits, SEEK_SET);//应为1078个字节
+	fseek(fp, bmpheader.bfOffBits, SEEK_SET);//应为1078个字节（16位）/54个字节（24位）
 	fread(pBmpBuf, lineByte * bmpHeight, 1, fp);
 	cout << "Writing to file, please wait..." << endl;
 	for (unsigned int j = 0; j<bmpHeight; j++)
@@ -254,7 +254,6 @@ bool Image::WritePixelToText()
 	cout << "Done!" << endl;
 	cout << "The file name is: " << filename << endl;
 	cout << "Press enter to exit." << endl;
-	cin.ignore();
-	getchar();
+	system("pause");
 	return true;//写入文件成功
 }

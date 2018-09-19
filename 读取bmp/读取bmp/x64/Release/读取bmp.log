@@ -1,11 +1,11 @@
 ﻿  main.cpp
-e:\ise207\读取bmp\读取bmp\imgheader.h(196): warning C4018: “<”: 有符号/无符号不匹配
-e:\ise207\读取bmp\读取bmp\imgheader.h(198): warning C4018: “<”: 有符号/无符号不匹配
-e:\ise207\读取bmp\读取bmp\imgheader.h(244): warning C4018: “<”: 有符号/无符号不匹配
-e:\ise207\读取bmp\读取bmp\imgheader.h(246): warning C4018: “<”: 有符号/无符号不匹配
+e:\ise207\读取bmp\读取bmp\imgheader.h(195): warning C4018: “<”: 有符号/无符号不匹配
+e:\ise207\读取bmp\读取bmp\imgheader.h(197): warning C4018: “<”: 有符号/无符号不匹配
+e:\ise207\读取bmp\读取bmp\imgheader.h(243): warning C4018: “<”: 有符号/无符号不匹配
+e:\ise207\读取bmp\读取bmp\imgheader.h(245): warning C4018: “<”: 有符号/无符号不匹配
   正在生成代码
-  1 of 122 functions ( 0.8%) were compiled, the rest were copied from previous compilation.
+  0 of 122 functions ( 0.0%) were compiled, the rest were copied from previous compilation.
     0 functions were new in current compilation
-    1 functions had inline decision re-evaluated but remain unchanged
+    0 functions had inline decision re-evaluated but remain unchanged
   已完成代码的生成
   读取bmp.vcxproj -> E:\ISE207\读取bmp\x64\Release\读取bmp.exe
