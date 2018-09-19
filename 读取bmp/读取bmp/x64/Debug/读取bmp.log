@@ -1,0 +1,4 @@
+﻿  main.cpp
+e:\ise207\读取bmp\读取bmp\imgheader.h(188): warning C4018: “<”: 有符号/无符号不匹配
+e:\ise207\读取bmp\读取bmp\imgheader.h(190): warning C4018: “<”: 有符号/无符号不匹配
+  读取bmp.vcxproj -> E:\ISE207\读取bmp\x64\Debug\读取bmp.exe
