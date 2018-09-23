@@ -4,7 +4,7 @@ using namespace std;
 using namespace cv;
 int main()
 {
-	Image bmp("C:\\Users\\KarK\\Pictures\\test2.bmp");
+	Image bmp("C:\\Users\\KarK\\Pictures\\test.bmp");
 	bmp.BMPRead();
 	bmp.BMPCVShow();
 	bmp.BMPWrite("result.bmp");

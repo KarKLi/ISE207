@@ -5,6 +5,7 @@
 #include <Windows.h>
 #include <malloc.h>
 #include <opencv2\highgui\highgui.hpp>
+#include <math.h>
 #define _CHANNEL_OF_COLOR 3
 using namespace std;
 using namespace cv;
@@ -119,7 +120,7 @@ bool Image::BMPWrite(const char *filename)//用于真彩色图像的写入
 	}
 	fwrite(&bmpheader, sizeof(BITMAPFILEHEADER), 1, file);
 	fwrite(&bmpinfo, sizeof(BITMAPINFO), 1, file);
- 	fseek(file,bmpheader.bfOffBits, SEEK_SET);//从0开始，漂移bfOffBits字节，类里的bfOffBits成员代表从0开始漂移的字节量到达像素点
+ 	fseek(file,bmpheader.bfOffBits, SEEK_SET);//从0开始，漂移bfOffBits字节，类里的bfOffBits成员代表从0开始漂移到达像素点的字节量
 	fread(buff,w*h*_CHANNEL_OF_COLOR,1, bmpfp);//读取长*宽*颜色数（BGR）到缓冲区buff中
 	cout << "Writing to file, please wait..." << endl;
 	for (unsigned int j = 0; j<h; j++)
@@ -214,25 +215,26 @@ bool Image::WritePixelToText()
 	cout << "Enter your filename that you want to write: ";
 	char filename[100] = { 0 };
 	cin >> filename;
-	FILE *file = fopen(filename, "wb");
+	FILE *file = fopen(filename, "w");
 	if (!file)
 		return false;
 	FILE *fp = fopen(ImgFilename.c_str(), "rb");//二进制读方式打开指定的图像文件
 	if (fp == 0)
 		return 0;
 	//fread(&bmpheader, sizeof(BITMAPFILEHEADER), 1, fp);
-	////定义位图信息头结构变量，读取位图信息头进内存，存放在变量head中
-	//fread(&bmpinfo, sizeof(BITMAPINFOHEADER), 1, fp); //获取图像宽、高、每像素所占位数等信息
+//定义位图信息头结构变量，读取位图信息头进内存，存放在变量head中
+//fread(&bmpinfo, sizeof(BITMAPINFOHEADER), 1, fp); //获取图像宽、高、每像素所占位数等信息
 	fseek(fp, 54, SEEK_SET);//漂移54字节
+	//int counts = 0;
 	LONG bmpWidth = bmpinfo.biWidth;
 	LONG bmpHeight = bmpinfo.biHeight;
 	WORD biBitCount = bmpinfo.biBitCount;//定义变量，计算图像每行像素所占的字节数（必须是4的倍数）
 	RGBQUAD pColorTable[256];
 	int lineByte = (bmpWidth * biBitCount / 8 + 3) / 4 * 4;//每行字节归四化
-	if (biBitCount == 8)
+	if (biBitCount < 24)//有调色板的非24位彩色图
 	{
 		//申请颜色表所需要的空间，读颜色表进内存
-		fread(&pColorTable, sizeof(RGBQUAD), 256, fp);
+		fread(&pColorTable, sizeof(RGBQUAD),pow(2,biBitCount), fp);
 	}
 	//申请位图数据所需要的空间，读位图数据进内存
 	unsigned char *pBmpBuf = new unsigned char[lineByte * bmpHeight];
@@ -241,12 +243,14 @@ bool Image::WritePixelToText()
 	fseek(fp, bmpheader.bfOffBits, SEEK_SET);//应为1078个字节（16位）/54个字节（24位）
 	fread(pBmpBuf, lineByte * bmpHeight, 1, fp);
 	cout << "Writing to file, please wait..." << endl;
-	for (unsigned int j = 0; j<bmpHeight; j++)
+	for (unsigned int j = 0; j < bmpHeight; j++)
 	{
-		for (unsigned int i = 0; i<lineByte; i++)
+		for (unsigned int i = 0; i < lineByte; i++)
 		{
-			fwrite(p++, 1, 1, file);//这里p++的作用和上面是一样的。
+			fprintf(file, "%02X ", (int)*p);
+			p++;
 		}
+		fprintf(file, "\n");
 	}
 	delete pBmpBuf;
 	fclose(fp);//关闭文件
