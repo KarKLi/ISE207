@@ -1,4 +1,9 @@
 ﻿  main.cpp
-e:\ise207\读取bmp\读取bmp\imgheader.h(188): warning C4018: “<”: 有符号/无符号不匹配
-e:\ise207\读取bmp\读取bmp\imgheader.h(190): warning C4018: “<”: 有符号/无符号不匹配
+e:\ise207\读取bmp\读取bmp\imgheader.h(260): warning C4244: “参数”: 从“double”转换到“size_t”，可能丢失数据
+e:\ise207\读取bmp\读取bmp\imgheader.h(272): warning C4018: “<”: 有符号/无符号不匹配
+e:\ise207\读取bmp\读取bmp\imgheader.h(274): warning C4018: “<”: 有符号/无符号不匹配
+e:\ise207\读取bmp\读取bmp\imgheader.h(291): warning C4018: “<”: 有符号/无符号不匹配
+e:\ise207\读取bmp\读取bmp\imgheader.h(293): warning C4018: “<”: 有符号/无符号不匹配
+e:\ise207\读取bmp\读取bmp\imgheader.h(323): warning C4018: “<”: 有符号/无符号不匹配
+e:\ise207\读取bmp\读取bmp\imgheader.h(325): warning C4018: “<”: 有符号/无符号不匹配
   读取bmp.vcxproj -> E:\ISE207\读取bmp\x64\Debug\读取bmp.exe

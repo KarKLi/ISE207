@@ -4,11 +4,11 @@ using namespace std;
 using namespace cv;
 int main()
 {
-	Image bmp("C:\\Users\\KarK\\Pictures\\test.bmp");
+	Image bmp("16.bmp");
 	bmp.BMPRead();
 	bmp.BMPCVShow();
-	bmp.BMPWrite("result.bmp");
-	bmp.WritePixelToText();
+	//bmp.BMPWrite("result.bmp");
+	bmp.WriteInfoToText();
 	getchar();
 	return 0;
 }
