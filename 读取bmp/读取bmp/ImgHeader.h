@@ -255,7 +255,7 @@ bool Image::WriteInfoToText()
 	WORD biBitCount = bmpinfo.biBitCount;//定义变量，计算图像每行像素所占的字节数（必须是4的倍数）
 	RGBQUAD pColorTable[256];
 	int lineByte = (bmpWidth * biBitCount / 8 + 3) / 4 * 4;//每行字节归四化
-	if (biBitCount < 16 || (biBitCount == 16 && bmpinfo.biCompression == BI_BITFIELDS))//有调色板的非24位，有压缩的16位彩色图
+	if (biBitCount < 16)//有调色板的非24位，有压缩的16位彩色图
 	{
 		//申请颜色表所需要的空间，读颜色表进内存
 		fread(&pColorTable, sizeof(RGBQUAD), pow(2, biBitCount), fp);
@@ -319,8 +319,6 @@ bool Image::WriteInfoToText()
 		}
 		break;
 	case 8:
-	case 4:
-	case 2:
 		for (unsigned int j = 0; j < bmpHeight; j++)
 		{
 			for (unsigned int i = 0; i < bmpWidth; i++)
