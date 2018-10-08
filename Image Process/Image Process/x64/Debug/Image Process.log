@@ -1,1 +1,3 @@
-﻿  Image Process.vcxproj -> E:\ISE207\Image Process\x64\Debug\Image Process.exe
+﻿  Image Process.cpp
+e:\ise207\image process\image process\image process.cpp(615): warning C4244: “=”: 从“double”转换到“int”，可能丢失数据
+  Image Process.vcxproj -> E:\ISE207\Image Process\x64\Debug\Image Process.exe
