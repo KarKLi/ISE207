@@ -61,20 +61,25 @@ private:
 	unsigned int ImageWidth;
 	unsigned int ImageHeight;
 	int ErrorCode = 0;
+	int lineByte = 0;
 };
 const char *Kernel::Loadimage(unsigned char *Image)
 {
 	if (ErrorCode == 1)
 		return "Some matters occurred.";
-	unsigned char *p = &Image[0];
+	lineByte = ImageWidth * 3;
+	while (lineByte % 4 != 0)//²¹Æë×Ö½Ú
+		++lineByte;
 	for (unsigned int i = 0; i < ImageHeight; i++)
 	{
-		for (unsigned int j = 0; j < ImageWidth; j++)
+		UINT copy = 0;
+		for (unsigned int j = 0; j < ImageWidth*3; j+=3)
 		{
 			try {
-				ImageData[i][j]=*p;
-				ImageInt[i][j] = (int)*p;
-				p++;
+				int tmp = (unsigned char)(round(Image[i*lineByte+j] * 0.299 + Image[i*lineByte + j + 1] * 0.587 + Image[i*lineByte + j + 2] * 0.114));
+				ImageData[i][copy]=tmp;
+				ImageInt[i][copy]= (int)tmp;
+				copy++;
 			}
 			catch (exception &e){
 				return e.what();
@@ -298,13 +303,25 @@ errno_t Kernel::Writeimage(unsigned char *dst)
 {
 	if (ErrorCode == 1)
 		return FALSE;
-	auto p = &dst[0];
+	int index = 0;
 	for (UINT i = 0; i < ImageHeight; i++)
 	{
-		for (UINT j = 0; j < ImageWidth; j++)
+		int index2 = 0;
+		UINT j = 0;
+		for (; j < ImageWidth*3; j+=3)
 		{
-			*p = ImageData[i][j];
-			p++;
+			for (UINT k = 0; k < 3; k++)
+			{
+				dst[index] = ImageData[i][index2];
+				index++;
+			}
+			index2++;
+		}
+		while (j < lineByte)
+		{
+			dst[index] = '\0';
+			index++;
+			j++;
 		}
 	}
 }
