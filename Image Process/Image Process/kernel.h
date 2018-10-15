@@ -19,7 +19,9 @@ Follow the agreement to download my source code!
 */
 #ifndef _KERNEL_
 #define _KERNEL_
-enum ConvolutionOperation {Average,WeightedAverage,Medium,FirstDerivative,FirstDerivativex,FirstDerivativey,SecondDerivative,SecondDerivativex,SecondDerivativey,Lapacian};
+enum ConvolutionOperation {Average,WeightedAverage,Medium,FirstDerivative,FirstDerivativex,FirstDerivativey,SecondDerivative,SecondDerivativex,SecondDerivativey,Laplacian,
+                           Robertsx,Robertsy,Roberts,Sobelx,Sobely,Prewittx,Prewitty,Prewitt
+                          };
 #include <cstdlib>
 #include <iostream>
 #include <vector>
@@ -37,10 +39,10 @@ inline bool comp(int i, int j) { return (i < j); }
 class Kernel
 {
 public:
-	Kernel(unsigned int ImageHeight,unsigned int ImageWidth, unsigned int KernelSize) : KernelSize(KernelSize), kerneldata(KernelSize,vector<double>(KernelSize)), ImageData(ImageHeight) ,
+	Kernel(unsigned int ImageHeight,unsigned int ImageWidth, unsigned int ksize) : ksize(ksize), kdata(ksize,vector<double>(ksize)), ImageData(ImageHeight) ,
 		                                                                                ImageWidth(ImageWidth),ImageHeight(ImageHeight),ImageInt(ImageHeight)
 	{
-		if (KernelSize % 2 == 0)
+		if (ksize % 2 == 0)
 			ErrorCode = 1;// Kernel size must be even
 		else
 			ErrorCode = 0;
@@ -51,11 +53,11 @@ public:
 	};
 	int checkErrorStat()const { return ErrorCode; }
 	const char *Loadimage(unsigned char *Image);
-	errno_t Convolution(ConvolutionOperation operators);
+	errno_t Convolution(ConvolutionOperation operators,bool addOriginalImage=false);
 	errno_t Writeimage(unsigned char *dst);
 private:
-	unsigned int KernelSize;
-	vector<vector<double>>kerneldata;
+	unsigned int ksize;
+	vector<vector<double>>kdata;
 	vector<vector<unsigned char>>ImageData;
 	vector<vector<int>>ImageInt;
 	unsigned int ImageWidth;
@@ -87,7 +89,7 @@ const char *Kernel::Loadimage(unsigned char *Image)
 		}
 	}
 }
-errno_t Kernel::Convolution(ConvolutionOperation operators)
+errno_t Kernel::Convolution(ConvolutionOperation operators,bool addOriginalImage)
 {
 	if (ErrorCode == 1)
 		return FALSE;
@@ -95,39 +97,39 @@ errno_t Kernel::Convolution(ConvolutionOperation operators)
 	switch (operators)
 	{
 	case ConvolutionOperation::Average:
-		for (unsigned int i = 0; i < KernelSize; i++)
+		for (unsigned int i = 0; i < ksize; i++)
 		{
-			for (unsigned int j = 0; j < KernelSize; j++)
+			for (unsigned int j = 0; j < ksize; j++)
 			{
-				kerneldata[i][j] = (1.0 / (double)(KernelSize*KernelSize));
+				kdata[i][j] = (1.0 / (double)(ksize*ksize));
 			}
 		}
 		break;
 	case ConvolutionOperation::WeightedAverage:
 	{
 		double sum = 0;
-		for (unsigned int i = 0; i < KernelSize; i++)
+		for (unsigned int i = 0; i < ksize; i++)
 		{
 			int temp = 1;
-			for (unsigned int j = 0; j < (KernelSize / 2) + 1; j++)
+			for (unsigned int j = 0; j < (ksize / 2); j++)
 			{
-				kerneldata[i][j] = temp;
+				kdata[i][j] = temp;
 				temp *= 2;
 				sum += temp;
 			}
-			for (unsigned int j = (KernelSize / 2) + 2; j < KernelSize; j++)
+			for (unsigned int j = (ksize / 2); j < ksize; j++)
 			{
-				kerneldata[i][j] = temp;
+				kdata[i][j] = temp;
 				temp /= 2;
 				sum += temp;
 			}
 		}
 		sum = 1.0 / sum;
-		for (unsigned int i = 0; i < KernelSize; i++)
+		for (unsigned int i = 0; i < ksize; i++)
 		{
-			for (unsigned int j = 0; j < KernelSize; j++)
+			for (unsigned int j = 0; j < ksize; j++)
 			{
-				kerneldata[i][j] = sum * kerneldata[i][j];//Normalized
+				kdata[i][j] = sum * kdata[i][j];//Normalized
 			}
 		}
 	}
@@ -136,16 +138,16 @@ errno_t Kernel::Convolution(ConvolutionOperation operators)
 		//No kernel
 		break;
 	case ConvolutionOperation::FirstDerivativex:
-		kerneldata[KernelSize / 2][KernelSize / 2] = 1;
-		kerneldata[KernelSize / 2][KernelSize / 2 + 1] = 0;
-		kerneldata[KernelSize / 2 + 1][KernelSize / 2] = -1;
-		kerneldata[KernelSize / 2 + 1][KernelSize / 2 + 1] = 0;
+		kdata[ksize / 2][ksize / 2] = 1;
+		kdata[ksize / 2][ksize / 2 + 1] = 0;
+		kdata[ksize / 2 + 1][ksize / 2] = -1;
+		kdata[ksize / 2 + 1][ksize / 2 + 1] = 0;
 		break;
 	case ConvolutionOperation::FirstDerivativey:
-		kerneldata[KernelSize / 2][KernelSize / 2] = 1;
-		kerneldata[KernelSize / 2][KernelSize / 2 + 1] = -1;
-		kerneldata[KernelSize / 2 + 1][KernelSize / 2] = 0;
-		kerneldata[KernelSize / 2 + 1][KernelSize / 2 + 1] = 0;
+		kdata[ksize / 2][ksize / 2] = 1;
+		kdata[ksize / 2][ksize / 2 + 1] = -1;
+		kdata[ksize / 2 + 1][ksize / 2] = 0;
+		kdata[ksize / 2 + 1][ksize / 2 + 1] = 0;
 		break;
 	case ConvolutionOperation::FirstDerivative:
 		/*Set Kernel.*/
@@ -161,40 +163,87 @@ errno_t Kernel::Convolution(ConvolutionOperation operators)
 			instead of
 			|G|=(|Gx|+|Gy|)^1/2
 		*/
-		kerneldata[KernelSize/2][KernelSize/2] = 2;
-		kerneldata[KernelSize/2][KernelSize/2 + 1] = -1;
-		kerneldata[KernelSize/2 + 1][KernelSize/2] = -1;
-		kerneldata[KernelSize/2 + 1][KernelSize/2 + 1] = 0;
+		kdata[ksize/2][ksize/2] = 2;
+		kdata[ksize/2][ksize/2 + 1] = -1;
+		kdata[ksize/2 + 1][ksize/2] = -1;
+		kdata[ksize/2 + 1][ksize/2 + 1] = 0;
 		break;
 	case ConvolutionOperation::SecondDerivative:
 		//set kernel
-		kerneldata[KernelSize / 2 - 1][KernelSize / 2] = 1;
-		kerneldata[KernelSize / 2][KernelSize / 2 - 1] = 1;
-		kerneldata[KernelSize / 2][KernelSize / 2] = -4;
-		kerneldata[KernelSize / 2][KernelSize / 2 + 1] = 1;
-		kerneldata[KernelSize / 2 + 1][KernelSize / 2] = 1;
+		kdata[ksize / 2 - 1][ksize / 2] = 1;
+		kdata[ksize / 2][ksize / 2 - 1] = 1;
+		kdata[ksize / 2][ksize / 2] = -4;
+		kdata[ksize / 2][ksize / 2 + 1] = 1;
+		kdata[ksize / 2 + 1][ksize / 2] = 1;
 		break;
 	case ConvolutionOperation::SecondDerivativex:
-		kerneldata[KernelSize / 2][KernelSize / 2] = -2;
-		kerneldata[KernelSize / 2][KernelSize / 2 + 1] = 1;
-		kerneldata[KernelSize / 2][KernelSize / 2-1] = 1;
+		kdata[ksize / 2][ksize / 2] = -2;
+		kdata[ksize / 2][ksize / 2 + 1] = 1;
+		kdata[ksize / 2][ksize / 2-1] = 1;
 		break;
 	case ConvolutionOperation::SecondDerivativey:
-		kerneldata[KernelSize / 2][KernelSize / 2] = -2;
-		kerneldata[KernelSize / 2-1][KernelSize / 2] = 1;
-		kerneldata[KernelSize / 2 + 1][KernelSize / 2] = 1;
+		kdata[ksize / 2][ksize / 2] = -2;
+		kdata[ksize / 2-1][ksize / 2] = 1;
+		kdata[ksize / 2 + 1][ksize / 2] = 1;
 		break;
-	case ConvolutionOperation::Lapacian:
+	case ConvolutionOperation::Laplacian:
 		//set Kernel
-		kerneldata[KernelSize/2-1][KernelSize/2-1] = 1;
-		kerneldata[KernelSize/2-1][KernelSize/2] = 1;
-		kerneldata[KernelSize/2-1][KernelSize/2+1] = 1;
-		kerneldata[KernelSize/2][KernelSize/2-1] = 1;
-		kerneldata[KernelSize/2][KernelSize/2] = -8;
-		kerneldata[KernelSize/2][KernelSize/2+1] = 1;
-		kerneldata[KernelSize/2+1][KernelSize/2-1] = 1;
-		kerneldata[KernelSize/2+1][KernelSize/2] = 1;
-		kerneldata[KernelSize/2+1][KernelSize/2+1] = 1;
+		kdata[ksize/2-1][ksize/2-1] = 1;
+		kdata[ksize/2-1][ksize/2] = 1;
+		kdata[ksize/2-1][ksize/2+1] = 1;
+		kdata[ksize/2][ksize/2-1] = 1;
+		kdata[ksize/2][ksize/2] = -8;
+		kdata[ksize/2][ksize/2+1] = 1;
+		kdata[ksize/2+1][ksize/2-1] = 1;
+		kdata[ksize/2+1][ksize/2] = 1;
+		kdata[ksize/2+1][ksize/2+1] = 1;
+		break;
+	case ConvolutionOperation::Roberts:
+		kdata[ksize / 2][ksize / 2] = 1;
+		kdata[ksize / 2][ksize / 2 + 1] = 1;
+		kdata[ksize / 2 + 1][ksize / 2] = -1;
+		kdata[ksize / 2 + 1][ksize / 2 + 1] = -1;
+		break;
+	case ConvolutionOperation::Robertsx:
+		kdata[ksize / 2][ksize / 2] = 1;
+		kdata[ksize / 2 + 1][ksize / 2 + 1] = -1;
+		break;
+	case ConvolutionOperation::Robertsy:
+		kdata[ksize / 2][ksize / 2 + 1] = 1;
+		kdata[ksize / 2 + 1][ksize / 2] = -1;
+		break;
+	case ConvolutionOperation::Prewitt:
+		kdata[ksize / 2 - 1][ksize / 2 - 1] = -2;
+		kdata[ksize / 2 - 1][ksize / 2] = -1;
+		kdata[ksize / 2 - 1][ksize / 2 + 1] = 0;
+		kdata[ksize / 2][ksize / 2 - 1] = -1;
+		kdata[ksize / 2][ksize / 2] = 0;
+		kdata[ksize / 2][ksize / 2 + 1] = 1;
+		kdata[ksize / 2 + 1][ksize / 2 - 1] = 0;
+		kdata[ksize / 2 + 1][ksize / 2] = 1;
+		kdata[ksize / 2 + 1][ksize / 2 + 1] = 2;
+		break;
+	case ConvolutionOperation::Prewittx:
+		kdata[ksize / 2 - 1][ksize / 2 - 1] = -1;
+		kdata[ksize / 2 - 1][ksize / 2] = -1;
+		kdata[ksize / 2 - 1][ksize / 2 + 1] = -1;
+		kdata[ksize / 2][ksize / 2 - 1] = 0;
+		kdata[ksize / 2][ksize / 2] = 0;
+		kdata[ksize / 2][ksize / 2 + 1] = 0;
+		kdata[ksize / 2 + 1][ksize / 2 - 1] = 1;
+		kdata[ksize / 2 + 1][ksize / 2] = 1;
+		kdata[ksize / 2 + 1][ksize / 2 + 1] = 1;
+		break;
+	case ConvolutionOperation::Prewitty:
+		kdata[ksize / 2 - 1][ksize / 2 - 1] = -1;
+		kdata[ksize / 2 - 1][ksize / 2] = 0;
+		kdata[ksize / 2 - 1][ksize / 2 + 1] = 1;
+		kdata[ksize / 2][ksize / 2 - 1] = -1;
+		kdata[ksize / 2][ksize / 2] = 0;
+		kdata[ksize / 2][ksize / 2 + 1] = 1;
+		kdata[ksize / 2 + 1][ksize / 2 - 1] = -1;
+		kdata[ksize / 2 + 1][ksize / 2] = 0;
+		kdata[ksize / 2 + 1][ksize / 2 + 1] = 1;
 		break;
 	default:
 		break;
@@ -203,46 +252,63 @@ errno_t Kernel::Convolution(ConvolutionOperation operators)
 	{
 	case Average:
 	case WeightedAverage:
-	case Lapacian:
+	case Laplacian:
 	case FirstDerivative:
 	case FirstDerivativex:
 	case FirstDerivativey:
 	case SecondDerivative:
 	case SecondDerivativex:
 	case SecondDerivativey:
+	case Roberts:
+	case Robertsx:
+	case Robertsy:
+	case Prewitt:
+	case Prewittx:
+	case Prewitty:
 	{
 		vector<vector<unsigned char>>Imagetemp=ImageData;
 		Imagetemp = ImageData;
 		int min = 32767;
 		int max = 0;
-		for (UINT i = KernelSize / 2; i < ImageHeight - 2 * (KernelSize / 2); i++)
+		for (UINT i = ksize / 2; i < ImageHeight - 2 * (ksize / 2); i++)
 		{
-			for (UINT j = KernelSize / 2; j < ImageWidth - 2 * (KernelSize / 2); j++)
+			for (UINT j = ksize / 2; j < ImageWidth - 2 * (ksize / 2); j++)
 			{
 				double cResult = 0;
-				int ImgbxIndex = i - KernelSize / 2;//当前像素点相对于核的左上角
-				int ImgbyIndex = j - KernelSize / 2;
+				int ImgbxIndex = i - ksize / 2;//当前像素点相对于核的左上角
+				int ImgbyIndex = j - ksize / 2;
 				int KerbIndex = 0;
-				while (ImgbxIndex <= i + KernelSize / 2)//左下角
+				while (ImgbxIndex <= i + ksize / 2)//左下角
 				{
 					//逐行扫描
-					for (UINT k = 0; k < KernelSize; k++) {
-						cResult += kerneldata[KerbIndex][k] * ImageData[ImgbxIndex][ImgbyIndex];
+					for (UINT k = 0; k < ksize; k++) {
+						cResult += kdata[KerbIndex][k] * ImageData[ImgbxIndex][ImgbyIndex];
 						ImgbyIndex++;
 					}
 					ImgbxIndex++;//扫描完一行，向下一行扫描
 					KerbIndex++;
-					ImgbyIndex = j-KernelSize/2;
+					ImgbyIndex = j-ksize/2;
 				}
 				cResult = round(cResult);
-				if (cResult < 0)
-					cResult=0;
-				if (cResult > 255)
-					cResult=255;
-				Imagetemp[i][j] = (unsigned char)cResult;//卷积完的结果赋值回原来的像素点
+				if (!addOriginalImage)
+				{
+					if (cResult < min)
+						min = cResult;
+					if (cResult > max)
+						max = cResult;
+					ImageInt[i][j] = cResult;
+				}
+				else
+				{
+					if (cResult < 0)
+						cResult = 0;
+					if (cResult > 255)
+						cResult = 255;
+					Imagetemp[i][j] = (unsigned char)cResult;//卷积完的结果赋值回原来的像素点
+				}
 			}
 		}
-		if (operators == Lapacian)
+		if (addOriginalImage)
 		{
 			for(UINT i=0;i<ImageData.size();i++)
 				for (UINT j = 0; j < ImageData[i].size(); j++)
@@ -252,41 +318,50 @@ errno_t Kernel::Convolution(ConvolutionOperation operators)
 						tmp1 = 255;
 					else if (tmp1 < 0)
 						tmp1 = 0;
-					ImageData[i][j] = (unsigned char)tmp1;
+					Imagetemp[i][j] = (unsigned char)tmp1;
 		       }
 			ImageData = Imagetemp;
 		}
 		else
+		{
+			for (UINT i = ksize / 2; i < ImageHeight - 2 * (ksize / 2); i++)
+			{
+				for (UINT j = ksize / 2; j < ImageWidth - 2 * (ksize / 2); j++)
+				{
+					Imagetemp[i][j] = (unsigned char)(255 * (ImageInt[i][j] - min)*1.0 / (max - min));
+				}
+			}
 			ImageData = Imagetemp;//拷贝
+		}
 	}
 	break;
 	case ConvolutionOperation::Medium:
 	{
 		vector<vector<unsigned char>>Imagetemp=ImageData;
-		int *temp = new int[KernelSize*KernelSize];
-		memset(temp, 0, KernelSize*KernelSize);
-		for (UINT i = KernelSize / 2; i < ImageHeight - 2 * (KernelSize / 2); i++)
+		int *temp = new int[ksize*ksize];
+		memset(temp, 0, ksize*ksize);
+		for (UINT i = ksize / 2; i < ImageHeight - 2 * (ksize / 2); i++)
 		{
-			for (UINT j = KernelSize / 2; j < ImageWidth - 2 * (KernelSize / 2); j++)
+			for (UINT j = ksize / 2; j < ImageWidth - 2 * (ksize / 2); j++)
 			{
-				int ImgbxIndex = i - KernelSize / 2;//当前像素点相对于核的左上角
-				int ImgbyIndex = j - KernelSize / 2;
+				int ImgbxIndex = i - ksize / 2;//当前像素点相对于核的左上角
+				int ImgbyIndex = j - ksize / 2;
 				int KerbIndex = 0;
 				int tmpIndex = 0;
-				while (ImgbxIndex <= i + KernelSize / 2)//左下角
+				while (ImgbxIndex <= i + ksize / 2)//左下角
 				{
 					//逐行扫描
-					for (UINT k = 0; k < KernelSize; k++) {
+					for (UINT k = 0; k < ksize; k++) {
 						temp[tmpIndex] = ImageData[ImgbxIndex][ImgbyIndex];
 						tmpIndex++;
 						ImgbyIndex++;
 					}
 					ImgbxIndex++;//扫描完一行，向下一行扫描
 					KerbIndex++;
-					ImgbyIndex = j - KernelSize / 2;
+					ImgbyIndex = j - ksize / 2;
 				}
-				std::sort(temp, temp + KernelSize * KernelSize, comp);
-				unsigned char result = temp[KernelSize*KernelSize / 2];
+				std::sort(temp, temp + ksize * ksize, comp);
+				unsigned char result = temp[ksize*ksize / 2];
 				Imagetemp[i][j] = result;
 			}
 		}
