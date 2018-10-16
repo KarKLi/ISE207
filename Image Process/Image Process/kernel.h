@@ -13,15 +13,18 @@ In this header, I provide some methods to make convolution such as
 Convolution();
 which accept a enum element defined by kernel.h, to make the blur convolution,
 sobel convolution, lapalacian convolution, etc.
+Now this header file can only support 24 bits gray picture.
+If I have time(hhhh), I will optimize functions and add more supported picture types.
 Enjoy it!
 This code will push on my GitHub page:Https://github.com/KarKLi/ISE207
 Follow the agreement to download my source code!
 */
 #ifndef _KERNEL_
 #define _KERNEL_
-enum ConvolutionOperation {Average,WeightedAverage,Medium,FirstDerivative,FirstDerivativex,FirstDerivativey,SecondDerivative,SecondDerivativex,SecondDerivativey,Laplacian,
-                           Robertsx,Robertsy,Roberts,Sobelx,Sobely,Prewittx,Prewitty,Prewitt
-                          };
+enum ConvolutionOperation {
+	Average, WeightedAverage, Medium, FirstDerivative, FirstDerivativex, FirstDerivativey, SecondDerivative, SecondDerivativex, SecondDerivativey, Laplacian,
+	Robertsx, Robertsy, Roberts, Sobelx, Sobely, Sobel, Prewittx, Prewitty, Prewitt
+};
 #include <cstdlib>
 #include <iostream>
 #include <vector>
@@ -39,8 +42,8 @@ inline bool comp(int i, int j) { return (i < j); }
 class Kernel
 {
 public:
-	Kernel(unsigned int ImageHeight,unsigned int ImageWidth, unsigned int ksize) : ksize(ksize), kdata(ksize,vector<double>(ksize)), ImageData(ImageHeight) ,
-		                                                                                ImageWidth(ImageWidth),ImageHeight(ImageHeight),ImageInt(ImageHeight)
+	Kernel(unsigned int ImageHeight, unsigned int ImageWidth, unsigned int ksize) : ksize(ksize), kdata(ksize, vector<double>(ksize)), ImageData(ImageHeight),
+		ImageWidth(ImageWidth), ImageHeight(ImageHeight), ImageInt(ImageHeight)
 	{
 		if (ksize % 2 == 0)
 			ErrorCode = 1;// Kernel size must be even
@@ -53,7 +56,7 @@ public:
 	};
 	int checkErrorStat()const { return ErrorCode; }
 	const char *Loadimage(unsigned char *Image);
-	errno_t Convolution(ConvolutionOperation operators,bool addOriginalImage=false);
+	errno_t Convolution(ConvolutionOperation operators, bool addOriginalImage = false);
 	errno_t Writeimage(unsigned char *dst);
 private:
 	unsigned int ksize;
@@ -75,21 +78,21 @@ const char *Kernel::Loadimage(unsigned char *Image)
 	for (unsigned int i = 0; i < ImageHeight; i++)
 	{
 		UINT copy = 0;
-		for (unsigned int j = 0; j < ImageWidth*3; j+=3)
+		for (unsigned int j = 0; j < ImageWidth * 3; j += 3)
 		{
 			try {
-				int tmp = (unsigned char)(round(Image[i*lineByte+j] * 0.299 + Image[i*lineByte + j + 1] * 0.587 + Image[i*lineByte + j + 2] * 0.114));
-				ImageData[i][copy]=tmp;
-				ImageInt[i][copy]= (int)tmp;
+				int tmp = (unsigned char)(round(Image[i*lineByte + j] * 0.299 + Image[i*lineByte + j + 1] * 0.587 + Image[i*lineByte + j + 2] * 0.114));
+				ImageData[i][copy] = tmp;
+				ImageInt[i][copy] = (int)tmp;
 				copy++;
 			}
-			catch (exception &e){
+			catch (exception &e) {
 				return e.what();
 			}
 		}
 	}
 }
-errno_t Kernel::Convolution(ConvolutionOperation operators,bool addOriginalImage)
+errno_t Kernel::Convolution(ConvolutionOperation operators, bool addOriginalImage)
 {
 	if (ErrorCode == 1)
 		return FALSE;
@@ -152,7 +155,7 @@ errno_t Kernel::Convolution(ConvolutionOperation operators,bool addOriginalImage
 	case ConvolutionOperation::FirstDerivative:
 		/*Set Kernel.*/
 		/*
-		    first,this kernel given by next is the Gradient of X-axis:
+			first,this kernel given by next is the Gradient of X-axis:
 			 1 0
 			-1 0
 			and the kernel give by next is the Gradient of Y-axis:
@@ -163,10 +166,10 @@ errno_t Kernel::Convolution(ConvolutionOperation operators,bool addOriginalImage
 			instead of
 			|G|=(|Gx|+|Gy|)^1/2
 		*/
-		kdata[ksize/2][ksize/2] = 2;
-		kdata[ksize/2][ksize/2 + 1] = -1;
-		kdata[ksize/2 + 1][ksize/2] = -1;
-		kdata[ksize/2 + 1][ksize/2 + 1] = 0;
+		kdata[ksize / 2][ksize / 2] = 2;
+		kdata[ksize / 2][ksize / 2 + 1] = -1;
+		kdata[ksize / 2 + 1][ksize / 2] = -1;
+		kdata[ksize / 2 + 1][ksize / 2 + 1] = 0;
 		break;
 	case ConvolutionOperation::SecondDerivative:
 		//set kernel
@@ -179,24 +182,24 @@ errno_t Kernel::Convolution(ConvolutionOperation operators,bool addOriginalImage
 	case ConvolutionOperation::SecondDerivativex:
 		kdata[ksize / 2][ksize / 2] = -2;
 		kdata[ksize / 2][ksize / 2 + 1] = 1;
-		kdata[ksize / 2][ksize / 2-1] = 1;
+		kdata[ksize / 2][ksize / 2 - 1] = 1;
 		break;
 	case ConvolutionOperation::SecondDerivativey:
 		kdata[ksize / 2][ksize / 2] = -2;
-		kdata[ksize / 2-1][ksize / 2] = 1;
+		kdata[ksize / 2 - 1][ksize / 2] = 1;
 		kdata[ksize / 2 + 1][ksize / 2] = 1;
 		break;
 	case ConvolutionOperation::Laplacian:
 		//set Kernel
-		kdata[ksize/2-1][ksize/2-1] = 1;
-		kdata[ksize/2-1][ksize/2] = 1;
-		kdata[ksize/2-1][ksize/2+1] = 1;
-		kdata[ksize/2][ksize/2-1] = 1;
-		kdata[ksize/2][ksize/2] = -8;
-		kdata[ksize/2][ksize/2+1] = 1;
-		kdata[ksize/2+1][ksize/2-1] = 1;
-		kdata[ksize/2+1][ksize/2] = 1;
-		kdata[ksize/2+1][ksize/2+1] = 1;
+		kdata[ksize / 2 - 1][ksize / 2 - 1] = 1;
+		kdata[ksize / 2 - 1][ksize / 2] = 1;
+		kdata[ksize / 2 - 1][ksize / 2 + 1] = 1;
+		kdata[ksize / 2][ksize / 2 - 1] = 1;
+		kdata[ksize / 2][ksize / 2] = -8;
+		kdata[ksize / 2][ksize / 2 + 1] = 1;
+		kdata[ksize / 2 + 1][ksize / 2 - 1] = 1;
+		kdata[ksize / 2 + 1][ksize / 2] = 1;
+		kdata[ksize / 2 + 1][ksize / 2 + 1] = 1;
 		break;
 	case ConvolutionOperation::Roberts:
 		kdata[ksize / 2][ksize / 2] = 1;
@@ -245,6 +248,39 @@ errno_t Kernel::Convolution(ConvolutionOperation operators,bool addOriginalImage
 		kdata[ksize / 2 + 1][ksize / 2] = 0;
 		kdata[ksize / 2 + 1][ksize / 2 + 1] = 1;
 		break;
+	case ConvolutionOperation::Sobel:
+		kdata[ksize / 2 - 1][ksize / 2 - 1] = -2;
+		kdata[ksize / 2 - 1][ksize / 2] = -2;
+		kdata[ksize / 2 - 1][ksize / 2 + 1] = 0;
+		kdata[ksize / 2][ksize / 2 - 1] = -2;
+		kdata[ksize / 2][ksize / 2] = 0;
+		kdata[ksize / 2][ksize / 2 + 1] = 2;
+		kdata[ksize / 2 + 1][ksize / 2 - 1] = 0;
+		kdata[ksize / 2 + 1][ksize / 2] = 2;
+		kdata[ksize / 2 + 1][ksize / 2 + 1] = 2;
+		break;
+	case ConvolutionOperation::Sobelx:
+		kdata[ksize / 2 - 1][ksize / 2 - 1] = -1;
+		kdata[ksize / 2 - 1][ksize / 2] = -2;
+		kdata[ksize / 2 - 1][ksize / 2 + 1] = -1;
+		kdata[ksize / 2][ksize / 2 - 1] = 0;
+		kdata[ksize / 2][ksize / 2] = 0;
+		kdata[ksize / 2][ksize / 2 + 1] = 0;
+		kdata[ksize / 2 + 1][ksize / 2 - 1] = 1;
+		kdata[ksize / 2 + 1][ksize / 2] = 2;
+		kdata[ksize / 2 + 1][ksize / 2 + 1] = 1;
+		break;
+	case ConvolutionOperation::Sobely:
+		kdata[ksize / 2 - 1][ksize / 2 - 1] = -1;
+		kdata[ksize / 2 - 1][ksize / 2] = 0;
+		kdata[ksize / 2 - 1][ksize / 2 + 1] = 1;
+		kdata[ksize / 2][ksize / 2 - 1] = -2;
+		kdata[ksize / 2][ksize / 2] = 0;
+		kdata[ksize / 2][ksize / 2 + 1] = 2;
+		kdata[ksize / 2 + 1][ksize / 2 - 1] = -1;
+		kdata[ksize / 2 + 1][ksize / 2] = 0;
+		kdata[ksize / 2 + 1][ksize / 2 + 1] = 1;
+		break;
 	default:
 		break;
 	}
@@ -265,8 +301,11 @@ errno_t Kernel::Convolution(ConvolutionOperation operators,bool addOriginalImage
 	case Prewitt:
 	case Prewittx:
 	case Prewitty:
+	case Sobelx:
+	case Sobely:
+	case Sobel:
 	{
-		vector<vector<unsigned char>>Imagetemp=ImageData;
+		vector<vector<unsigned char>>Imagetemp = ImageData;
 		Imagetemp = ImageData;
 		int min = 32767;
 		int max = 0;
@@ -287,7 +326,7 @@ errno_t Kernel::Convolution(ConvolutionOperation operators,bool addOriginalImage
 					}
 					ImgbxIndex++;//扫描完一行，向下一行扫描
 					KerbIndex++;
-					ImgbyIndex = j-ksize/2;
+					ImgbyIndex = j - ksize / 2;
 				}
 				cResult = round(cResult);
 				if (!addOriginalImage)
@@ -310,7 +349,7 @@ errno_t Kernel::Convolution(ConvolutionOperation operators,bool addOriginalImage
 		}
 		if (addOriginalImage)
 		{
-			for(UINT i=0;i<ImageData.size();i++)
+			for (UINT i = 0; i < ImageData.size(); i++)
 				for (UINT j = 0; j < ImageData[i].size(); j++)
 				{
 					int tmp1 = (int)ImageData[i][j] + (int)Imagetemp[i][j];
@@ -319,7 +358,7 @@ errno_t Kernel::Convolution(ConvolutionOperation operators,bool addOriginalImage
 					else if (tmp1 < 0)
 						tmp1 = 0;
 					Imagetemp[i][j] = (unsigned char)tmp1;
-		       }
+				}
 			ImageData = Imagetemp;
 		}
 		else
@@ -337,7 +376,7 @@ errno_t Kernel::Convolution(ConvolutionOperation operators,bool addOriginalImage
 	break;
 	case ConvolutionOperation::Medium:
 	{
-		vector<vector<unsigned char>>Imagetemp=ImageData;
+		vector<vector<unsigned char>>Imagetemp = ImageData;
 		int *temp = new int[ksize*ksize];
 		memset(temp, 0, ksize*ksize);
 		for (UINT i = ksize / 2; i < ImageHeight - 2 * (ksize / 2); i++)
@@ -371,7 +410,7 @@ errno_t Kernel::Convolution(ConvolutionOperation operators,bool addOriginalImage
 	}
 	break;
 	default:
-	break;
+		break;
 	}
 }
 errno_t Kernel::Writeimage(unsigned char *dst)
@@ -383,7 +422,7 @@ errno_t Kernel::Writeimage(unsigned char *dst)
 	{
 		int index2 = 0;
 		UINT j = 0;
-		for (; j < ImageWidth*3; j+=3)
+		for (; j < ImageWidth * 3; j += 3)
 		{
 			for (UINT k = 0; k < 3; k++)
 			{
@@ -403,8 +442,8 @@ errno_t Kernel::Writeimage(unsigned char *dst)
 class IMGINFO
 {
 public:
-	IMGINFO() {/*do nothing*/}
-	IMGINFO(UINT Height, UINT Width, bool _8_BITS, bool _24_BITS) :Height(Height),Width(Width),_8_BITS(_8_BITS),_24_BITS(_24_BITS) {}
+	IMGINFO() {/*do nothing*/ }
+	IMGINFO(UINT Height, UINT Width, bool _8_BITS, bool _24_BITS) :Height(Height), Width(Width), _8_BITS(_8_BITS), _24_BITS(_24_BITS) {}
 	unsigned int Height;
 	unsigned int Width;
 	bool _8_BITS;
@@ -418,7 +457,7 @@ public:
 	}
 };
 
-errno_t ImageProcess(unsigned char *src1, unsigned char *src2, unsigned char *dst, IMGINFO inf1, IMGINFO inf2, bool add = false, bool minus = false)
+errno_t ImageProcess(unsigned char *src1, unsigned char *src2, unsigned char *dst, IMGINFO inf1, IMGINFO inf2, bool add = false, bool minus = false, bool Normalized = false)
 {
 	//accept 24 bits image
 	if ((inf1._8_BITS&inf2._24_BITS) != 0)
@@ -428,33 +467,114 @@ errno_t ImageProcess(unsigned char *src1, unsigned char *src2, unsigned char *ds
 	if ((inf1._24_BITS != true) || (inf1._24_BITS != true))
 		return ERRNO_FAIL;
 	int index = 0;
-	if (add)
+	int lineByte = inf1.Width * 3;
+	while (lineByte % 4 != 0)
+		++lineByte;
+	unsigned char *tmp1 = new unsigned char[inf1.Height*lineByte];
+	unsigned char *tmp2 = new unsigned char[inf1.Height*lineByte];
+	unsigned char *dst1 = new unsigned char[inf1.Height*lineByte];
+	for (unsigned int i = 0; i < inf1.Height; i++)
 	{
-		for (UINT i = 0; i < inf1.Height*inf1.Width; i++)
+		UINT copy = 0;
+		for (unsigned int j = 0; j < inf1.Width * 3; j += 3)
 		{
-			int temp = src1[i] + src2[i];
-			if (temp > 255)
-				temp = 255;
-			if (temp < 0)
-				temp = 0;
-			dst[i] = temp;
+				tmp1[i*inf1.Width+copy] = src1[i*lineByte+j];
+				tmp2[i*inf1.Width + copy] = src2[i*lineByte + j];
+				copy++;
 		}
-		return ERRNO_SUCCESS;
 	}
-	else if (minus)
+	if (!Normalized)
 	{
-		for(UINT i = 0; i < inf1.Height*inf1.Width; i++)
+		if (add)
 		{
-			int temp = src1[i] - src2[i];
-			if (temp > 255)
-				temp=255;
-			if (temp < 0)
-				temp=0;
-			dst[i] = temp;
+			int count = 0;
+			for (UINT i = 0; i < inf1.Height*inf1.Width; i++)
+			{
+				int temp = tmp1[i] + tmp2[i];
+				if (temp > 255)
+					temp = 255;
+				if (temp < 0)
+					temp = 0;
+				dst1[i] = temp;
+			}
 		}
-		return ERRNO_SUCCESS;
+		else if (minus)
+		{
+			for (UINT i = 0; i < inf1.Height*inf1.Width; i++)
+			{
+				int temp = tmp1[i] - tmp2[i];
+				if (temp > 255)
+					temp = 255;
+				if (temp < 0)
+					temp = 0;
+				dst1[i] = temp;
+			}
+		}
 	}
-	else return ERRNO_FAIL;
-	return ERRNO_FAIL;//unexpected situation
+	else
+	{
+		int *buff = 0;
+		int max = tmp1[0] + tmp2[0];
+		int min = tmp1[0] + tmp2[0];
+		buff = new int[inf1.Height*inf1.Width];
+		memset(buff, 0, inf1.Height*inf1.Width);
+		if (add)
+		{
+			for (UINT i = 0; i < inf1.Height*inf1.Width; i++)
+			{
+				buff[i] = tmp1[i] + tmp2[i];
+				if (buff[i] > max)
+					max = buff[i];
+				if (min > buff[i])
+					min = buff[i];
+			}
+			if (max == min)
+				max = min + 1;
+			for (UINT i = 0; i < inf1.Height*inf1.Width; i++)
+			{
+				dst1[i] = round((255 * (buff[i] - min)*1.0/(max - min)));
+			}
+
+		}
+		else
+		{
+			for (UINT i = 0; i < inf1.Height*inf1.Width; i++)
+			{
+				buff[i] = tmp1[i] - tmp2[i];
+				if (buff[i] > max)
+					max = buff[i];
+				if (min > buff[i])
+					min = buff[i];
+			}
+			if (max == min)
+				max = min + 1;
+			for (UINT i = 0; i < inf1.Height*inf1.Width; i++)
+			{
+				dst1[i] = round((255 * (buff[i] - min)*1.0/(max - min)));
+			}
+		}
+	}
+	for (UINT i = 0; i < inf1.Height; i++)
+	{
+
+		int index2 = 0;
+		UINT j = 0;
+		for (; j <inf1.Width * 3; j += 3)
+		{
+			for (UINT k = 0; k < 3; k++)
+			{
+				dst[index] = dst1[i*inf1.Width+index2];
+				index++;
+			}
+			index2++;
+		}
+		while (j < lineByte)
+		{
+			dst[index] = '\0';
+			index++;
+			j++;
+		}
+	}
+	return ERRNO_SUCCESS;
 }
 #endif
