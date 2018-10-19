@@ -1,0 +1,4 @@
+﻿  main.cpp
+e:\ise207\fourier transform\fourier transform\ft.h(157): warning C4101: “e”: 未引用的局部变量
+e:\ise207\fourier transform\fourier transform\ft.h(282): warning C4101: “e”: 未引用的局部变量
+  Fourier Transform.vcxproj -> E:\ISE207\Fourier Transform\Debug\Fourier Transform.exe

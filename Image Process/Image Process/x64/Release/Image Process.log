@@ -1,8 +1,8 @@
 ﻿  Image Process.cpp
 e:\ise207\image process\image process\image process.cpp(615): warning C4244: “=”: 从“double”转换到“int”，可能丢失数据
   正在生成代码
-  4 of 41 functions ( 9.8%) were compiled, the rest were copied from previous compilation.
+  5 of 41 functions (12.2%) were compiled, the rest were copied from previous compilation.
     0 functions were new in current compilation
-    0 functions had inline decision re-evaluated but remain unchanged
+    1 functions had inline decision re-evaluated but remain unchanged
   已完成代码的生成
   Image Process.vcxproj -> E:\ISE207\Image Process\x64\Release\Image Process.exe
