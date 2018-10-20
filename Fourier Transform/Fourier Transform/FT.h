@@ -58,6 +58,13 @@ namespace FT
 			tmp.Imaginary = obj1.Imaginary - obj2.Imaginary;
 			return Complex(tmp);
 		}
+		friend Complex operator*(Complex obj1, double num)
+		{
+			Complex tmp;
+			tmp.real = obj1.real*num;
+			tmp.Imaginary = obj1.Imaginary*num;
+			return Complex(tmp);
+		}
 		friend Complex operator*(Complex obj1, Complex obj2)
 		{
 			Complex tmp;
@@ -402,15 +409,22 @@ namespace FT
 				ErrorCode = 3;
 				return;
 			}
-			vector<vector<Complex>>DFTData;
-			DFTData.resize(xLength);
-			for (int i = 0; i < xLength; i++)
-				DFTData[i].resize(yLength);
+			vector<vector<Complex>>DFTData = this->Data;
 			int M = xLength;
 			int N = yLength;
 			/*
 				利用可分离性，先在y方向上求傅里叶变换，将结果存入数组，将该数组在x方向上进行傅里叶变换
 			*/
+			if (Central == true)
+			{
+				for (int x = 0; x <= M - 1; x++)
+				{
+					for (int y = 0; y <= N - 1; y++)
+					{
+						Data[x][y] = Data[x][y] * pow(-1, x + y);
+					}
+				}
+			}
 			Complex Base;
 			for (int u = 0; u < xLength; u++)
 				for (int v = 0; v < yLength; v++)
@@ -420,17 +434,9 @@ namespace FT
 					{
 						for (int y = 0; y <= N - 1; y++)
 						{
-							if (Central == false)
-							{
-								Base.real = cos(2 * PI*u*x / M + 2 * PI*v*y / N);
-								Base.Imaginary = -sin(2 * PI*u*x / M + 2 * PI*v*y / N);
-							}
-							else
-							{
-								if ((x + y) % 2 == 0)//odd
-									Base = 1;
-								else Base = -1;
-							}
+
+							Base.real = cos(2 * PI*u*x / M + 2 * PI*v*y / N);
+							Base.Imaginary = -sin(2 * PI*u*x / M + 2 * PI*v*y / N);
 							sum = sum + Data[x][y] * Base;
 						}
 					}
@@ -475,17 +481,8 @@ namespace FT
 						{
 							for (int y = 0; y <= N - 1; y++)
 							{
-								if (hasCentraled == false)
-								{
-									Base.real = cos(2 * PI*u*x / M + 2 * PI*v*y / N);
-									Base.Imaginary = sin(2 * PI*u*x / M + 2 * PI*v*y / N);
-								}
-								else
-								{
-									if ((x + y) % 2 == 0)//odd
-										Base = 1;
-									else Base = -1;
-								}
+								Base.real = cos(2 * PI*u*x / M + 2 * PI*v*y / N);
+								Base.Imaginary = sin(2 * PI*u*x / M + 2 * PI*v*y / N);
 								sum = sum + Data[x][y] * Base;
 							}
 						}

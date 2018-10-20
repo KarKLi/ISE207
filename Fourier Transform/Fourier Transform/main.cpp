@@ -1,80 +1,47 @@
 #include "FT.h"
+#include <opencv2\opencv.hpp>
+#include <opencv2\highgui.hpp>
+using namespace cv;
 int main()
 {
-	Complex x[5];
-	x[0].real = 147;
-	x[0].Imaginary = 0;
-	x[1].real = 213;
-	x[1].Imaginary = 0;
-	x[2].real = 125;
-	x[2].Imaginary = 0;
-	x[3].real = 58;
-	x[3].Imaginary = 0;
-	x[4].real = 12;
-	x[4].Imaginary = 0;
-	cout << "Original data:" << endl;
-	for (int i = 0; i < 5; i++)
+	Mat src = imread("C:\\Users\\Admin\\Desktop\\lena.bmp", 0);
+	if (src.empty())
+		exit(1);
+	vector<vector<FT::Complex>>Image;
+	Image.resize(src.rows);
+	for (uint i = 0; i < src.rows; i++)
+		Image[i].resize(src.cols);
+	for (uint i = 0; i < src.rows; ++i)
+		for (uint j = 0; j < src.cols; ++j)
+			Image[i][j] = (double)src.at<uchar>(i, j);
+	FT::DFTTwoDim dfts(src.rows, src.cols);
+	dfts.LoadData(Image);
+	dfts.DFT(false);
+	Mat dst;
+	src.copyTo(dst);
+	vector<vector<double>>Dst(src.rows, vector<double>(src.cols));
+	vector<vector<FT::Complex>>Dstcomp(src.rows, vector<FT::Complex>(src.cols));
+	dfts.GetAmplitudeArray(Dst, src.rows, src.cols);
+	for (int i = 0; i < src.rows; i++)
 	{
-		cout << "x" << i;
-		cout.setf(ios::left);
-		cout.width(5);
-		cout << ": " << x[i] << endl;
+		uchar *p = dst.ptr<uchar>(i);
+		for (int j = 0; j < src.cols; j++)
+		{
+			int tmp=round(150.0*(255.0*log2(1.0 + Dst[i][j] / 255)));
+			if (tmp > 255)
+				tmp = 255;
+			p[j] = (uchar)tmp;
+		}
 	}
-	DFTOneDim dft(5);
-	dft.LoadData(x);
-	dft.DFT();
-	int error = dft.GetLastErrorCode();
-	if (error == 0)
-		dft.WriteData(x);
-	cout << "After processing data:" << endl;
-	for (int i = 0; i < 5; i++)
+	imwrite("C:\\Users\\Admin\\Desktop\\DFTAmplitude.bmp",dst);
+	dfts.InverseDFT();
+	dfts.WriteData(Dstcomp);
+	for (int i = 0; i < src.rows; i++)
 	{
-		cout << "x" << i;
-		cout.setf(ios::left);
-		cout.width(5);
-		cout<< ": " << x[i] << endl;
+		uchar *p = dst.ptr<uchar>(i);
+		for (int j = 0; j < src.cols; j++)
+			p[j] = (uchar)Dstcomp[i][j].real;
 	}
-	dft.InverseDFT();
-	error = dft.GetLastErrorCode();
-	if (error == 0)
-		dft.WriteData(x);
-	cout << "After inverse process data:" << endl;
-	for (int i = 0; i < 5; i++)
-	{
-		cout << "x" << i;
-		cout.setf(ios::left);
-		cout.width(5);
-		cout << ": " << x[i] << endl;
-	}
-	dft.DFT();
-	double Array[5];
-	dft.GetAmplitudeArray(Array, 5);
-	double Array2[5];
-	dft.GetPhaseArray(Array2, 5);
-	long double Array3[5];
-	dft.GetPowerArray(Array3, 5);
-	cout << "And its Amplitude data:" << endl;
-	for (int i = 0; i < 5; i++)
-	{
-		cout << "x" << i;
-		cout.setf(ios::left);
-		cout.width(5);
-		cout << ": " << Array[i] << endl;
-	}
-	cout << "And its Phase data:" << endl;
-	for (int i = 0; i < 5; i++)
-	{
-		cout << "x" << i;
-		cout.setf(ios::left);
-		cout.width(5);
-		cout << ": " << Array2[i] << endl;
-	}cout << "And its Power data:" << endl;
-	for (int i = 0; i < 5; i++)
-	{
-		cout << "x" << i;
-		cout.setf(ios::left);
-		cout.width(5);
-		cout << ": " << Array3[i] << endl;
-	}
+	imwrite("C:\\Users\\Admin\\Desktop\\IDFT.bmp", dst);
   	return 0;
 }
